@@ -35,12 +35,18 @@ int main(int argc, char * argv[]) {
         struct sockaddr_in client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
 
-        first_packet_t first_packet;
+        first_packet_t first_packet = {0};
 
         
-        recvfrom(sockfd, &first_packet, sizeof(first_packet_t), 0, (struct sockaddr *) &client_addr, &client_addr_len);
+        int received = recvfrom(sockfd, &first_packet, sizeof(first_packet_t), 0, (struct sockaddr *) &client_addr, &client_addr_len);
+        printf("receieved %d\n", received);
+
+        for (int i = 0; i < 22; i++) {
+            printf("%c\n", first_packet.file_name[i]);
+        }
 
         if (first_packet.file_name[20] != ' ') {
+            printf("Filename too long\n");
             continue;
         }
 

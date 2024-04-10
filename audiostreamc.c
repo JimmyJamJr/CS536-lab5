@@ -39,11 +39,11 @@ int main(int argc, char * argv[]) {
 
 	char * aud_file_name = argv[1];
 	char * block_size = argv[2];
-	// char * buffer_size = argv[3];
-	// char * target_buf = argv[4];
+	char * buffer_size = argv[3];
+	char * target_buf = argv[4];
 	char * server_ip = argv[5];
 	char * server_port = argv[6];
-	// char * log_file_name = argv[7];
+	char * log_file_name = argv[7];
 
     int udp_sock = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -55,7 +55,9 @@ int main(int argc, char * argv[]) {
 	first_packet_t first_packet = {{0}, atoi(block_size)};
 	memset(first_packet.file_name, ' ', 22);
 	strncpy(first_packet.file_name, aud_file_name, 22);
-	sendto(udp_sock, &first_packet, sizeof(first_packet_t), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
+	int sent = sendto(udp_sock, &first_packet, sizeof(first_packet_t), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
+
+	printf("Sent inital packet to server %d\n", sent);
 
 	return 0;
 }
