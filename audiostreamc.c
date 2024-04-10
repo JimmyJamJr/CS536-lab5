@@ -34,10 +34,21 @@ void mulawclose(void) {
 	snd_pcm_close(mulawdev);
 }
 
+int transmission_started = 0;
+fifo_t client_buffer = {0};
+
 // Handler which will print an error message and quit if server doesn't respond after 2
-void sig_handler(int signum){
-    printf("No response from the server after 2s, closing the client.\n");
-    exit(-1);
+// Or if the transmission has started, read from buffer when the alarm goes off
+void sig_handler(int signum) {
+	if (transmission_started) {
+		char read_buf[4096];
+		fifo_read(&client_buffer, read_buf, 4096);
+		ualarm(313 * 1000, 0);
+	}
+	else {
+		printf("No response from the server after 2s, closing the client.\n");
+    	exit(-1);
+	}
 }
 
 
@@ -76,7 +87,6 @@ int main(int argc, char * argv[]) {
 	// Create buffer to store audio data received
 	char buf[buffer_size];
 	memset(buf, 0, buffer_size);
-	fifo_t client_buffer = {0};
 	fifo_init(&client_buffer, buf, buffer_size);
 
 	// Start an alarm to quit if no response from server for 2s
@@ -88,10 +98,19 @@ int main(int argc, char * argv[]) {
 	char new_packet[block_size];
 	while (1) {
 		size_t received_size = recvfrom(udp_sock, &new_packet, block_size, 0, (struct sockaddr*) &server_address, &server_address_len);
-		fifo_write(&client_buffer, new_packet, received_size);
+		printf("Received %ld bytes from the server\n", received_size);
 
-		// Reset the alarm to 2 seconds upon receiving packet from server
-		ualarm(2000 * 1000, 0);
+		transmission_started = 1;
+
+		if (received_size > 0) {
+			fifo_write(&client_buffer, new_packet, received_size);
+		}
+		else {
+			// Server is done
+		}
+
+		// Set the alarm to go off every 313 ms (for reading from buffer)
+		ualarm(313 * 1000, 0);
 	}
 
 	
