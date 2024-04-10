@@ -1,5 +1,7 @@
 #include "audiostream.h"
 
+// ./audiostreams 1 1 1 logfileS 128.10.112.142  26260
+
 
 int main(int argc, char * argv[]) {
     if (argc != 7) {
@@ -45,10 +47,18 @@ int main(int argc, char * argv[]) {
             printf("%c\n", first_packet.file_name[i]);
         }
 
+        printf("%c.\n", first_packet.file_name[20]);
         if (first_packet.file_name[20] != ' ') {
             printf("Filename too long\n");
             continue;
         }
+        for (int i = 0; i < 22; i++) {
+            if (first_packet.file_name[i] == ' ') {
+                first_packet.file_name[i] = '\0';
+                break;
+            }
+        }
+
 
         unsigned short block_size = first_packet.block_size; 
         char * ip_addr = inet_ntoa(client_addr.sin_addr);
