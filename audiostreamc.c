@@ -97,13 +97,18 @@ int main(int argc, char * argv[]) {
 	uint32_t server_address_len = sizeof(server_address);
 	char new_packet[block_size];
 	while (1) {
-		size_t received_size = recvfrom(udp_sock, &new_packet, block_size, 0, (struct sockaddr*) &server_address, &server_address_len);
+		// block size + 1 to include null terminal
+		size_t received_size = recvfrom(udp_sock, &new_packet, block_size + 1, 0, (struct sockaddr*) &server_address, &server_address_len);
 		printf("Received %ld bytes from the server\n", received_size);
 
 		transmission_started = 1;
 
 		if (received_size > 0) {
-			fifo_write(&client_buffer, new_packet, received_size);
+			fifo_write(&client_buffer, new_packet, received_size - 1); // don't write the null character at the end
+			// write back how full the client_buffer is
+			unsigned short buffer_state = client_buffer.filled;
+			sendto(udp_sock, &buffer_state, 2, 0, (struct sockaddr*) &server_address, sizeof(server_address));
+
 		}
 		else {
 			// Server is done

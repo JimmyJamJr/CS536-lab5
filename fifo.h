@@ -5,12 +5,14 @@ typedef struct {
     int head;
     int tail;
     int size;
+    unsigned short filled; // for percentage filled
 } fifo_t;
 
 //This initializes the FIFO structure with the given buffer and size
 void fifo_init(fifo_t * f, char * buf, int size){
     f->head = 0;
     f->tail = 0;
+    f->filled = 0;
     f->size = size;
     f->buf = buf;
 }
@@ -20,6 +22,7 @@ void fifo_init(fifo_t * f, char * buf, int size){
 int fifo_read(fifo_t * f, void * buf, int nbytes){
      int i;
      char * p = (char *) buf;
+     f->filled--;
      for(i=0; i < nbytes; i++){
           if( f->tail != f->head ){ //see if any data is available
                *p++ = f->buf[f->tail];  //grab a byte from the buffer
@@ -40,6 +43,7 @@ int fifo_read(fifo_t * f, void * buf, int nbytes){
 int fifo_write(fifo_t * f, const void * buf, int nbytes){
      int i;
      const char * p = (char *) buf;
+     f->filled++;
      for(i=0; i < nbytes; i++){
            //first check to see if there is space in the buffer
            if( (f->head + 1 == f->tail) || ( (f->head + 1 == f->size) && (f->tail == 0)) ) {

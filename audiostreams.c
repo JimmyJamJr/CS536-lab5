@@ -40,10 +40,10 @@ int main(int argc, char * argv[]) {
         first_packet_t first_packet = {0};
 
         
-        int received = recvfrom(sockfd, &first_packet, sizeof(first_packet_t), 0, (struct sockaddr *) &client_addr, &client_addr_len);
+        recvfrom(sockfd, &first_packet, sizeof(first_packet_t), 0, (struct sockaddr *) &client_addr, &client_addr_len);
 
         if (first_packet.file_name[20] != ' ') {
-            printf("Filename too long\n");
+            fprintf(stdout, "Error: Filename too long\n");
             continue;
         }
 
@@ -69,24 +69,75 @@ int main(int argc, char * argv[]) {
             memset(&child_addr, 0, sizeof(child_addr));
             child_addr.sin_family = AF_INET;
             child_addr.sin_port = 0;
-            inet_aton(ip_addr, (struct in_addr *) &child_addr.sin_addr.s_addr);
+            inet_aton(argv[5], (struct in_addr *) &child_addr.sin_addr.s_addr);
 
             int child_bind = bind(child_socket, (struct sockaddr *) &child_addr, sizeof(child_addr));
+            
 
             if (child_bind != 0) {
-                fprintf(stdout, "Error binding to port number. Exiting... ");
+                fprintf(stdout, "Error binding to port number. Exiting Child... ");
                 exit(1);
             }
 
-            printf("binded child!\n");
+            FILE * audio_file = fopen(first_packet.file_name, "r");
+            if (audio_file == NULL) {
+                fprintf(stdout, "Error: Could not open audio file for cleint %d\n", client_num);
+                exit(1);
+            }
 
-            float packetinterval = 1.0 / lambda;      
+            fseek(audio_file, 0, SEEK_END);
+            int file_size = ftell(audio_file);
+
+            fseek(audio_file, 0, SEEK_SET);
+
+            int packet_nums = file_size / block_size;
+            if (file_size % block_size != 0) {
+                packet_nums++;
+            }
+            printf("packet_nums: %d\n", packet_nums);
+
+            char ** packets = (char **) malloc(sizeof(char *) * packet_nums);
+            assert(packets != NULL);
+
+            int * lambda_vals = (int *) malloc(sizeof(int) * packet_nums);
+            assert(lambda_vals != NULL);
+
+            for (int i = 0; i < packet_nums; i++) {
+                packets[i] = (char *) malloc(sizeof(char) * (block_size + 1));
+                assert(packets[i] != NULL);
+                int items_read = fread(packets[i], sizeof(char), block_size, audio_file);
+                packets[i][items_read] = '\0';
+            }
+
+
+            int packetinterval = 1.0 / lambda;    
+
+            struct timeval start_time;
+            gettimeofday(&start_time, NULL);
+
+            for (int i = 0; i < packet_nums; i++) {
+
+
+                int sent = sendto(child_socket, packets[i], strlen(packets[i]), 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
+                unsigned short bufferstate;
+                int recieved = recvfrom(child_socket, &bufferstate, 3, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
+                printf("%d %d", recieved, bufferstate);
+                if (recieved != 2) {
+                    fprintf(stdout, "Error: Bufferstate not correct size for client number: %d. Exiting...\n", client_num);
+                }
+
+                printf("client buffer has %d filled!\n", bufferstate);
+                struct timeval time;
+                gettimeofday(&time, NULL);
+
+
+            }  
             
 
 
 
             // Create file name here
-            char log_file[50] = "log_files/";
+            char log_file[50] = "server_log_files/";
             char cnt[10];
             sprintf(cnt, "%d", client_num);
             strcat(log_file, argv[4]);
@@ -97,7 +148,11 @@ int main(int argc, char * argv[]) {
 
 
             
-
+            free(lambda_vals);
+            for (int i = 0; i < packet_nums; i++) {
+                free(packets[i]);
+            }
+            free(packets);
             exit(1);
         }
 
