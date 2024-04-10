@@ -1,5 +1,7 @@
 #include "audiostream.h"
 
+#include <signal.h>
+
 
 static snd_pcm_t *mulawdev;
 static snd_pcm_uframes_t mulawfrms;
@@ -30,6 +32,12 @@ void mulawclose(void) {
 	snd_pcm_close(mulawdev);
 }
 
+// Handler which will print an error message and quit if server doesn't respond after 2
+void sig_handler(int signum){
+    printf("No response from the server after 2s, closing the client.\n");
+    exit(-1);
+}
+
 
 int main(int argc, char * argv[]) {
     if (argc != 8) {
@@ -39,7 +47,7 @@ int main(int argc, char * argv[]) {
 
 	char * aud_file_name = argv[1];
 	char * block_size = argv[2];
-	char * buffer_size = argv[3];
+	unsigned int buffer_size = atoi(argv[3]);
 	char * target_buf = argv[4];
 	char * server_ip = argv[5];
 	char * server_port = argv[6];
@@ -58,6 +66,15 @@ int main(int argc, char * argv[]) {
 	int sent = sendto(udp_sock, &first_packet, sizeof(first_packet_t), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
 
 	printf("Sent inital packet to server %d\n", sent);
+
+	// Create buffer to store audio data received
+	unsigned short aud_buffer[buffer_size];
+
+	// Start an alarm to quit if no response from server for 2s
+    signal(SIGALRM, sig_handler);
+    ualarm(2000 * 1000, 0);
+
+	
 
 	return 0;
 }
