@@ -7,6 +7,10 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
 
+    float lambda = atoi(argv[1]);
+    int epsilon = atoi(argv[2]);
+    int gamma = atoi(argv[3]);
+
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
     /* Initialize socket structs */
@@ -41,10 +45,36 @@ int main(int argc, char * argv[]) {
         }
 
         unsigned short block_size = first_packet.block_size; 
+        char * ip_addr = inet_ntoa(client_addr.sin_addr);
 
         int k = fork();
         if (k == 0) { // child process
-            printf("Child!\n");
+            printf("Child! %s\n", ip_addr);
+
+            struct sockaddr_in child_addr;
+            memset(&child_addr, 0, sizeof(child_addr));
+            child_addr.sin_family = AF_INET;
+            child_addr.sin_port = 0;
+            inet_aton(ip_addr, (struct in_addr *) &child_addr.sin_addr.s_addr);
+
+            int client_num = client_count++;      
+
+            float packetinterval = 1.0 / lambda;      
+            
+
+
+
+            // Create file name here
+            char log_file[50] = "log_files/";
+            char cnt[10];
+            sprintf(cnt, "%d", client_num);
+            strcat(log_file, argv[4]);
+            strcat(log_file, "-");
+            strcat(log_file, cnt);
+
+
+
+
             
 
             exit(1);
