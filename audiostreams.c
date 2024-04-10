@@ -12,6 +12,8 @@ int main(int argc, char * argv[]) {
     int lambda = atoi(argv[1]);
     int epsilon = atoi(argv[2]);
     int gamma = atoi(argv[3]);
+    const int q_star = 10;
+    const int beta = 1;
 
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -120,8 +122,7 @@ int main(int argc, char * argv[]) {
 
                 int sent = sendto(child_socket, packets[i], strlen(packets[i]), 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
                 unsigned short bufferstate;
-                int recieved = recvfrom(child_socket, &bufferstate, 3, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
-                printf("%d %d", recieved, bufferstate);
+                int recieved = recvfrom(child_socket, &bufferstate, 3, 0, (struct sockaddr*) &client_addr, &client_addr_len);
                 if (recieved != 2) {
                     fprintf(stdout, "Error: Bufferstate not correct size for client number: %d. Exiting...\n", client_num);
                 }
@@ -130,8 +131,13 @@ int main(int argc, char * argv[]) {
                 struct timeval time;
                 gettimeofday(&time, NULL);
 
+                lambda = lambda + epsilon * (q_star - bufferstate) + beta * (gamma - lambda);
+            }
 
-            }  
+            for (int i = 0; i < 5; i++) {
+                printf("Sending empty packet %d\n", i);
+                int sent = sendto(child_socket, NULL, 0, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
+            }
             
 
 
@@ -143,6 +149,9 @@ int main(int argc, char * argv[]) {
             strcat(log_file, argv[4]);
             strcat(log_file, "-");
             strcat(log_file, cnt);
+
+
+            // print log files here
 
 
 
