@@ -2,6 +2,7 @@
 #include "fifo.h"
 
 #include <signal.h>
+#include <sys/time.h>
 
 // ./audiostreamc kj.au 4096 81920 81920 128.10.112.142 26260 logfileC
 
@@ -34,8 +35,20 @@ void mulawclose(void) {
 	snd_pcm_close(mulawdev);
 }
 
+typedef struct log_entry {
+	int Q;
+	int time;
+	struct log_entry * next;
+} log_entry_t;
+
 int transmission_started = 0;
 fifo_t client_buffer = {0};
+log_entry_t * log_list = NULL;
+
+void log_occupency(int Q) {
+	
+}
+
 
 // Handler which will print an error message and quit if server doesn't respond after 2
 // Or if the transmission has started, read from buffer when the alarm goes off
@@ -43,6 +56,9 @@ void sig_handler(int signum) {
 	if (transmission_started) {
 		char read_buf[4096];
 		fifo_read(&client_buffer, read_buf, 4096);
+
+		
+
 		ualarm(313 * 1000, 0);
 	}
 	else {
