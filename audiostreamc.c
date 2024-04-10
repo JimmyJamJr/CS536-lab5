@@ -1,4 +1,5 @@
 #include "audiostream.h"
+#include "fifo.h"
 
 #include <signal.h>
 
@@ -47,8 +48,8 @@ int main(int argc, char * argv[]) {
     }
 
 	char * aud_file_name = argv[1];
-	char * block_size = argv[2];
-	unsigned int buffer_size = atoi(argv[3]);
+	unsigned short block_size = atoi(argv[2]);
+	unsigned short buffer_size = atoi(argv[3]);
 	char * target_buf = argv[4];
 	char * server_ip = argv[5];
 	char * server_port = argv[6];
@@ -61,7 +62,7 @@ int main(int argc, char * argv[]) {
     inet_pton(AF_INET, server_ip, &(server_address.sin_addr));
 
 	// Create and send iniital packet to the server
-	first_packet_t first_packet = {{0}, atoi(block_size)};
+	first_packet_t first_packet = {{0}, block_size};
 	memset(first_packet.file_name, ' ', 22);
 	strncpy(first_packet.file_name, aud_file_name, 22);
     for (int i = strlen(aud_file_name); i < 22; i++) {
@@ -73,11 +74,25 @@ int main(int argc, char * argv[]) {
 	printf("Sent inital packet to server %d\n", sent);
 
 	// Create buffer to store audio data received
-	unsigned short aud_buffer[buffer_size];
+	char buf[buffer_size];
+	memset(buf, 0, buffer_size);
+	fifo_t client_buffer = {0};
+	fifo_init(&client_buffer, buf, buffer_size);
 
 	// Start an alarm to quit if no response from server for 2s
     signal(SIGALRM, sig_handler);
     ualarm(2000 * 1000, 0);
+
+	// Receive audio data from the server and push it into the buffer
+	uint32_t server_address_len = sizeof(server_address);
+	char new_packet[block_size];
+	while (1) {
+		size_t received_size = recvfrom(udp_sock, &new_packet, block_size, 0, (struct sockaddr*) &server_address, &server_address_len);
+		fifo_write(&client_buffer, new_packet, received_size);
+
+		// Reset the alarm to 2 seconds upon receiving packet from server
+		ualarm(2000 * 1000, 0);
+	}
 
 	
 
