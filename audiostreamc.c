@@ -34,22 +34,29 @@ void mulawclose(void) {
 int main(int argc, char * argv[]) {
     if (argc != 8) {
         fprintf(stdout, "Please input 8 Command Line Arguments\n");
-        exit(1);
+        // exit(1);
     }
 
-     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+	char * aud_file_name = argv[1];
+	char * block_size = argv[2];
+	// char * buffer_size = argv[3];
+	// char * target_buf = argv[4];
+	char * server_ip = argv[5];
+	char * server_port = argv[6];
+	// char * log_file_name = argv[7];
 
-    /* Initialize socket structs */
+    int udp_sock = socket(AF_INET, SOCK_DGRAM, 0);
 
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = atoi(argv[6]);
-    inet_aton(argv[5], (struct in_addr *) &addr.sin_addr.s_addr);
+    // Create struct for the server address
+    struct sockaddr_in server_address = {.sin_family = AF_INET, .sin_port = atoi(server_port)};
+    inet_pton(AF_INET, server_ip, &(server_address.sin_addr));
 
+	// Create and send iniital packet to the server
+	first_packet_t first_packet = {{0}, atoi(block_size)};
+	memset(first_packet.file_name, ' ', 22);
+	strncpy(first_packet.file_name, aud_file_name, 22);
+	sendto(udp_sock, &first_packet, sizeof(first_packet_t), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
 
-    bind(sockfd, (struct sockaddr *) &addr, sizeof(addr));
-
-
+	return 0;
 }
 
