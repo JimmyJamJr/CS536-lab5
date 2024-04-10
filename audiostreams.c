@@ -9,7 +9,7 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
 
-    float lambda = atoi(argv[1]);
+    int lambda = atoi(argv[1]);
     int epsilon = atoi(argv[2]);
     int gamma = atoi(argv[3]);
 
@@ -41,17 +41,12 @@ int main(int argc, char * argv[]) {
 
         
         int received = recvfrom(sockfd, &first_packet, sizeof(first_packet_t), 0, (struct sockaddr *) &client_addr, &client_addr_len);
-        printf("receieved %d\n", received);
 
-        for (int i = 0; i < 22; i++) {
-            printf("%c\n", first_packet.file_name[i]);
-        }
-
-        printf("%c.\n", first_packet.file_name[20]);
         if (first_packet.file_name[20] != ' ') {
             printf("Filename too long\n");
             continue;
         }
+
         for (int i = 0; i < 22; i++) {
             if (first_packet.file_name[i] == ' ') {
                 first_packet.file_name[i] = '\0';
@@ -59,13 +54,16 @@ int main(int argc, char * argv[]) {
             }
         }
 
-
         unsigned short block_size = first_packet.block_size; 
         char * ip_addr = inet_ntoa(client_addr.sin_addr);
+        int client_num = client_count++;
 
         int k = fork();
         if (k == 0) { // child process
-            printf("Child! %s\n", ip_addr);
+
+            int child_socket = socket(AF_INET, SOCK_DGRAM, 0);
+
+            printf("client ip addr: %s\n", ip_addr);
 
             struct sockaddr_in child_addr;
             memset(&child_addr, 0, sizeof(child_addr));
@@ -73,7 +71,14 @@ int main(int argc, char * argv[]) {
             child_addr.sin_port = 0;
             inet_aton(ip_addr, (struct in_addr *) &child_addr.sin_addr.s_addr);
 
-            int client_num = client_count++;      
+            int child_bind = bind(child_socket, (struct sockaddr *) &child_addr, sizeof(child_addr));
+
+            if (child_bind != 0) {
+                fprintf(stdout, "Error binding to port number. Exiting... ");
+                exit(1);
+            }
+
+            printf("binded child!\n");
 
             float packetinterval = 1.0 / lambda;      
             

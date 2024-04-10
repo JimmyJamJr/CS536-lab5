@@ -2,7 +2,7 @@
 
 #include <signal.h>
 
-// ./audiostreamc kj.au 4096 81920 81920 128.10.112.142  26260 logfileC
+// ./audiostreamc kj.au 4096 81920 81920 128.10.112.142 26260 logfileC
 
 static snd_pcm_t *mulawdev;
 static snd_pcm_uframes_t mulawfrms;
