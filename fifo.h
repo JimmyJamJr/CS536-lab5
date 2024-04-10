@@ -1,18 +1,18 @@
 // https://blog.stratifylabs.dev/device/2013-10-02-A-FIFO-Buffer-Implementation/
 
 typedef struct {
-     char * buf;
-     int head;
-     int tail;
-     int size;
+    char * buf;
+    int head;
+    int tail;
+    int size;
 } fifo_t;
 
 //This initializes the FIFO structure with the given buffer and size
 void fifo_init(fifo_t * f, char * buf, int size){
-     f->head = 0;
-     f->tail = 0;
-     f->size = size;
-     f->buf = buf;
+    f->head = 0;
+    f->tail = 0;
+    f->size = size;
+    f->buf = buf;
 }
 
 //This reads nbytes bytes from the FIFO
