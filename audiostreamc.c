@@ -111,14 +111,23 @@ int main(int argc, char * argv[]) {
 
 	// Receive audio data from the server and push it into the buffer
 	uint32_t server_address_len = sizeof(server_address);
-	char new_packet[block_size];
+	char new_packet[block_size + 1];
+	int empty_packets = 0;
 	while (1) {
 		// block size + 1 to include null terminal
 		size_t received_size = recvfrom(udp_sock, &new_packet, block_size + 1, 0, (struct sockaddr*) &server_address, &server_address_len);
 		printf("Received %ld bytes from the server\n", received_size);
+		if (received_size == 0) {
+			empty_packets++;
+		} else {
+			empty_packets = 0;
+		}
+
+		if (empty_packets == 4) {
+			break;
+		}
 
 		transmission_started = 1;
-
 		if (received_size > 0) {
 			fifo_write(&client_buffer, new_packet, received_size - 1); // don't write the null character at the end
 			// write back how full the client_buffer is
