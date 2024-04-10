@@ -2,6 +2,7 @@
 
 #include <signal.h>
 
+// ./audiostreamc kj.au 4096 81920 81920 128.10.112.142  26260 logfileC
 
 static snd_pcm_t *mulawdev;
 static snd_pcm_uframes_t mulawfrms;
@@ -63,6 +64,10 @@ int main(int argc, char * argv[]) {
 	first_packet_t first_packet = {{0}, atoi(block_size)};
 	memset(first_packet.file_name, ' ', 22);
 	strncpy(first_packet.file_name, aud_file_name, 22);
+    for (int i = strlen(aud_file_name); i < 22; i++) {
+        first_packet.file_name[i] = ' ';
+    }
+    
 	int sent = sendto(udp_sock, &first_packet, sizeof(first_packet_t), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
 
 	printf("Sent inital packet to server %d\n", sent);
