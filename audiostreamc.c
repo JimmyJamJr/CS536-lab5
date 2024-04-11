@@ -119,6 +119,18 @@ void send_buffer_occupancy() {
 	int sent = sendto(udp_sock, &num_to_send, sizeof(num_to_send), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
 }
 
+void create_graph(char * input_file_path) {
+	printf("Creating client graph\n");
+	FILE * pipe_gp = popen("gnuplot -p", "w");
+	fputs("set terminal png \n",pipe_gp);
+	fputs("set output 'client.png' \n",pipe_gp);
+	fputs("set datafile separator ',' \n", pipe_gp);
+	fputs("set xlabel 'time since start (ms)' \n",pipe_gp);
+	fputs("set ylabel 'buffer filled (bytes)' \n",pipe_gp);
+	fprintf(pipe_gp, "set title 'blocksize = %d, buffersize = %d, targetbuffer = %d' \n", block_size, buffer_size, target_buf);
+	fprintf(pipe_gp, "plot '%s' using 1:2 with lines lc 'blue' lw 1 \n", input_file_path);
+}
+
 void write_log_to_file() {
 	// Create file name here
 	char log_file_path[50] = "client_log_files/";
@@ -134,11 +146,12 @@ void write_log_to_file() {
 	} else {
 		log_entry_t * curr = log_list;
 		while (curr) {
-			fprintf(log_file, "%d,%0.3f\n", curr->Q, curr->time);
+			fprintf(log_file, "%0.3f,%d\n", curr->time, curr->Q);
 			curr = curr->next;
 		}
 	}
 	fclose(log_file);
+	create_graph(log_file_path);
 }
 
 

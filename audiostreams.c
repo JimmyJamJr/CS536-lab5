@@ -5,6 +5,22 @@
 
 #define CONTROLLAW 0
 
+float lambda;
+float epsilon;
+float gamma;
+
+void create_graph(char * input_file_path) {
+    printf("Creating server graph\n");
+	FILE * pipe_gp = popen("gnuplot -p", "w");
+	fputs("set terminal png \n",pipe_gp);
+	fputs("set output 'server.png' \n",pipe_gp);
+	fputs("set datafile separator ',' \n", pipe_gp);
+	fputs("set xlabel 'time since start (ms)' \n",pipe_gp);
+	fputs("set ylabel 'time between packets (ms)' \n",pipe_gp);
+    fprintf(pipe_gp, "set title 'lambda = %d, epsilon = %d, gamma = %d' \n", lambda, epsilon, gamma);
+	fprintf(pipe_gp, "plot '%s' using 1:2 with lines lc 'red' lw 1 \n", input_file_path);
+}
+
 
 int main(int argc, char * argv[]) {
     if (argc != 7) {
@@ -12,9 +28,9 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
 
-    float lambda = atof(argv[1]);
-    float epsilon = atof(argv[2]);
-    float gamma = atof(argv[3]);
+    lambda = atof(argv[1]);
+    epsilon = atof(argv[2]);
+    gamma = atof(argv[3]);
     const int q_star = 10;
     //const int beta = 1;
     float ideal = (1.0 / 313) * 1000;
@@ -184,9 +200,11 @@ int main(int argc, char * argv[]) {
                 fprintf(stdout, "Unable to open log file!\n");
             } else {
                 for (int i = 0; i < packet_nums; i++) {
-                    fprintf(log_file, "%0.3f,%0.3f\n", lambda_vals[i] / 1000000, time_vals[i]);
+                    fprintf(log_file, "%0.3f,%0.3f\n", time_vals[i], lambda_vals[i] / 1000000);
                 }
             }
+
+            create_graph(log_file_name);
 
             free(lambda_vals);
             for (int i = 0; i < packet_nums; i++) {
@@ -194,7 +212,7 @@ int main(int argc, char * argv[]) {
             }
             free(packets);
             fprintf(stdout, "Exiting child process at end of file transmission\n");
-            exit(1);
+            // exit(1);
         }
 
     }
