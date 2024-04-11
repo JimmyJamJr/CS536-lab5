@@ -111,6 +111,10 @@ void send_buffer_occupancy() {
 		num_to_send = 10;
 	}
 
+	if (num_to_send == 0) {
+		num_to_send = 21;
+	}
+
 	printf("sending q to server: %d\n", num_to_send);
 	int sent = sendto(udp_sock, &num_to_send, sizeof(num_to_send), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
 }
