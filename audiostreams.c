@@ -176,6 +176,7 @@ int main(int argc, char * argv[]) {
                 for (int i = 0; i < packet_nums; i++) {
                     fprintf(log_file, "%0.3f, ", lambda_vals[i]);
                 }
+                fprintf(log_file, "\n\n");
                 for (int i = 0; i < packet_nums; i++) {
                     fprintf(log_file, "%0.3f, ", time_vals[i]);
                 }

@@ -240,7 +240,7 @@ int main(int argc, char * argv[]) {
 		
 	}
 	mulawclose();
-	
+	write_log_to_file();
 
 	return 0;
 }
