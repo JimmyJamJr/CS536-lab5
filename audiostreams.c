@@ -20,7 +20,7 @@ void create_graph(char * input_file_path) {
 	fputs("set datafile separator ',' \n", pipe_gp);
 	fputs("set xlabel 'time since start (ms)' \n",pipe_gp);
 	fputs("set ylabel 'time between packets (ms)' \n",pipe_gp);
-    fprintf(pipe_gp, "set title 'lambda = %d, epsilon = %d, gamma = %d' \n", lambda, epsilon, gamma);
+    fprintf(pipe_gp, "set title 'lambda = %f, epsilon = %f, gamma = %f' \n", lambda, epsilon, gamma);
 	fprintf(pipe_gp, "plot '%s' using 1:2 with lines lc 'red' lw 1 \n", input_file_path);
 }
 
@@ -172,22 +172,20 @@ int main(int argc, char * argv[]) {
                 float elapsed = 1.0 * ((time.tv_sec-start_time.tv_sec)*1000000 + (time.tv_usec-start_time.tv_usec)) / 1000;
                 time_vals[i] = elapsed;
                 lambda_vals[i] = packetinterval;
-
                 packetinterval = packetinterval_cpy;
+
                 if (CONTROLLAW == 0) { // method d
-                printf("ideal: %f, packetinterval: %ld\n", ideal, packetinterval / 1000000);
                     lambda = lambda + epsilon * (q_star - bufferstate) + gamma * ((ideal - lambda));
                 } else { // method c
                     lambda = lambda + epsilon * (q_star - bufferstate);
                 }
 
                 // makes lambda at minimum (so that all packets don't get sent at once)
-                if (lambda < 1.8) {
-                    lambda = 1.8;
+                if (lambda < .6) {
+                    lambda = .6;
                 }
                 
                 packetinterval = 1.0 / lambda * 1000000000; // Unit: nanoseconds
-
             }
 
             for (int i = 0; i < 5; i++) {
