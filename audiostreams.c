@@ -12,11 +12,12 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
 
-    int lambda = atoi(argv[1]);
+    float lambda = atoi(argv[1]);
     int epsilon = atoi(argv[2]);
     int gamma = atoi(argv[3]);
     const int q_star = 10;
-    const int beta = 1;
+    //const int beta = 1;
+    float ideal = 1.0 / 313 * 1000;
 
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -122,7 +123,7 @@ int main(int argc, char * argv[]) {
 
             for (int i = 0; i < packet_nums; i++) {
                 // nano sleep at start for fun!
-                printf("lambda: %d\n", lambda);
+                printf("lambda: %f\n", lambda);
                 struct timespec tim1, tim2;
                 tim1.tv_sec = 0;
                 tim1.tv_nsec = packetinterval;
@@ -139,9 +140,10 @@ int main(int argc, char * argv[]) {
                 gettimeofday(&time, NULL);
                 float elapsed = 1.0 * ((time.tv_sec-start_time.tv_sec)*1000000 + (time.tv_usec-start_time.tv_usec)) / 1000;
                 lambda_vals[i] = elapsed; 
-
+                start_time.tv_sec = time.tv_sec;
+                start_time.tv_usec = time.tv_usec;
                 if (CONTROLLAW == 0) { // method d
-                    lambda = lambda + epsilon * (q_star - bufferstate) + beta * (gamma - lambda);
+                    lambda = lambda + epsilon * (q_star - bufferstate) + gamma * (ideal - lambda);
                 } else { // method c
                     lambda = lambda + epsilon * (q_star - bufferstate);
                 }
