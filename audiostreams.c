@@ -12,9 +12,9 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
 
-    float lambda = atoi(argv[1]);
-    int epsilon = atoi(argv[2]);
-    int gamma = atoi(argv[3]);
+    float lambda = atof(argv[1]);
+    float epsilon = atof(argv[2]);
+    float gamma = atof(argv[3]);
     const int q_star = 10;
     //const int beta = 1;
     float ideal = 1.0 / 313 * 1000;
@@ -146,7 +146,7 @@ int main(int argc, char * argv[]) {
 
                 
                 if (CONTROLLAW == 0) { // method d
-                    lambda = lambda + epsilon * (q_star - bufferstate) + gamma * (ideal - lambda);
+                    lambda = lambda + epsilon * (q_star - bufferstate) + gamma * (ideal - packetinterval / 1000000);
                 } else { // method c
                     lambda = lambda + epsilon * (q_star - bufferstate);
                 }
@@ -174,7 +174,7 @@ int main(int argc, char * argv[]) {
                 fprintf(stdout, "Unable to open log file!\n");
             } else {
                 for (int i = 0; i < packet_nums; i++) {
-                    fprintf(log_file, "%0.3f, ", lambda_vals[i]);
+                    fprintf(log_file, "%0.3f, ", lambda_vals[i] / 1000000);
                 }
                 fprintf(log_file, "\n\n");
                 for (int i = 0; i < packet_nums; i++) {
