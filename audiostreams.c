@@ -17,7 +17,7 @@ void create_graph(char * input_file_path) {
 	fputs("set datafile separator ',' \n", pipe_gp);
 	fputs("set xlabel 'time since start (ms)' \n",pipe_gp);
 	fputs("set ylabel 'time between packets (ms)' \n",pipe_gp);
-    fprintf(pipe_gp, "set title 'lambda = %d, epsilon = %d, gamma = %d' \n", lambda, epsilon, gamma);
+    fprintf(pipe_gp, "set title 'lambda = %0.3lf, epsilon = %0.3lf, gamma = %0.3lf' \n", lambda, epsilon, gamma);
 	fprintf(pipe_gp, "plot '%s' using 1:2 with lines lc 'red' lw 1 \n", input_file_path);
 }
 
