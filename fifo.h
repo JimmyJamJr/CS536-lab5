@@ -22,7 +22,7 @@ void fifo_init(fifo_t * f, char * buf, int size){
 int fifo_read(fifo_t * f, void * buf, int nbytes){
      int i;
      char * p = (char *) buf;
-     f->filled -= nbytes;
+     
      for(i=0; i < nbytes; i++){
           if( f->tail != f->head ){ //see if any data is available
                *p++ = f->buf[f->tail];  //grab a byte from the buffer
@@ -31,9 +31,11 @@ int fifo_read(fifo_t * f, void * buf, int nbytes){
                     f->tail = 0;
                }
           } else {
+               f->filled -= i;
                return i; //number of bytes read
           }
      }
+     f->filled -= nbytes;
      return nbytes;
 }
 
@@ -43,10 +45,11 @@ int fifo_read(fifo_t * f, void * buf, int nbytes){
 int fifo_write(fifo_t * f, const void * buf, int nbytes){
      int i;
      const char * p = (char *) buf;
-     f->filled += nbytes;
+     
      for(i=0; i < nbytes; i++){
            //first check to see if there is space in the buffer
            if( (f->head + 1 == f->tail) || ( (f->head + 1 == f->size) && (f->tail == 0)) ) {
+                    f->filled += i;
                  return i; //no more room
            } else {
                f->buf[f->head] = *p++;
@@ -56,5 +59,6 @@ int fifo_write(fifo_t * f, const void * buf, int nbytes){
                }
            }
      }
+     f->filled += nbytes;
      return nbytes;
 }

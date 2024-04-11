@@ -5,7 +5,7 @@
 #include <sys/time.h>
 #include <math.h>
 
-// ./audiostreamc kj.au 4096 81920 81920 128.10.112.142 26260 logfileC
+// ./audiostreamc kj.au 4096 81920 40960 128.10.112.142 26260 logfileC
 
 static snd_pcm_t *mulawdev;
 static snd_pcm_uframes_t mulawfrms;
@@ -57,6 +57,7 @@ log_entry_t * log_list = NULL;
 void log_occupency(int Q) {
 	log_entry_t * new_log = malloc(sizeof(log_entry_t));
 	new_log->Q = client_buffer.filled;
+	printf("%d\n", new_log->Q);
 	struct timeval curr_time = {0};
 	gettimeofday(&curr_time, NULL);
 	float elpased = (curr_time.tv_sec - start_time.tv_sec) * 1000 + (curr_time.tv_usec - start_time.tv_usec) / 1000.0;
@@ -92,19 +93,21 @@ int get_latest_Q() {
 
 void send_buffer_occupancy() {
 	int current_Q = get_latest_Q();
+	printf("current Q: %d\n", current_Q);
 	unsigned short num_to_send = 0;
 	if (current_Q > target_buf) {
 		float q = (current_Q - target_buf) * 1.0 / (buffer_size - target_buf);
 		num_to_send = round(q * 10 + 10);
 	}
 	else if (current_Q < target_buf) {
-		float q = (target_buf - current_Q) / target_buf;
+		float q = (target_buf - current_Q) * 1.0 / target_buf;
 		num_to_send = round(10 - (q * 10));
 	}
 	else {
 		num_to_send = 10;
 	}
 
+	printf("sending q to server: %d\n", num_to_send);
 	int sent = sendto(udp_sock, &num_to_send, sizeof(num_to_send), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
 }
 
@@ -112,9 +115,11 @@ void send_buffer_occupancy() {
 // Handler which will print an error message and quit if server doesn't respond after 2
 // Or if the transmission has started, read from buffer when the alarm goes off
 void sig_handler(int signum) {
-	if (transmission_started) {
+	if (transmission_started == 1) {
 		char read_buf[4096];
 		fifo_read(&client_buffer, read_buf, 4096);
+		printf("Reading from buffer\n");
+		log_occupency(client_buffer.filled);
 		send_buffer_occupancy();
 		ualarm(313 * 1000, 0);
 	}
@@ -175,7 +180,7 @@ int main(int argc, char * argv[]) {
 	int empty_packets = 0;
 	while (1) {
 		// block size + 1 to include null terminal
-		size_t received_size = recvfrom(udp_sock, &new_packet, block_size + 1, 0, (struct sockaddr*) &server_address, &server_address_len);
+		size_t received_size = recvfrom(udp_sock, &new_packet, block_size, 0, (struct sockaddr*) &server_address, &server_address_len);
 		printf("Received %ld bytes from the server\n", received_size);
 		if (received_size == 0) {
 			empty_packets++;
@@ -184,22 +189,25 @@ int main(int argc, char * argv[]) {
 		}
 
 		if (empty_packets == 4) {
+			// Server is done
 			break;
 		}
-
-		transmission_started = 1;
+		
+		if (transmission_started == 0) {
+			transmission_started = 1;
+			// Set the alarm to go off every 313 ms (for reading from buffer)
+			alarm(0);
+			ualarm(313 * 1000, 0);
+		}
+		
 		if (received_size > 0) {
-			fifo_write(&client_buffer, new_packet, received_size - 1); // don't write the null character at the end
+			fifo_write(&client_buffer, new_packet, received_size); // don't write the null character at the end
+			log_occupency(client_buffer.filled);
 			// write back how full the client_buffer is
 			send_buffer_occupancy();
 
 		}
-		else {
-			// Server is done
-		}
-
-		// Set the alarm to go off every 313 ms (for reading from buffer)
-		ualarm(313 * 1000, 0);
+		
 	}
 
 	
