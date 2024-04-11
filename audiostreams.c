@@ -105,8 +105,10 @@ int main(int argc, char * argv[]) {
             char ** packets = (char **) malloc(sizeof(char *) * packet_nums);
             assert(packets != NULL);
 
-            float * lambda_vals = (float *) malloc(sizeof(int) * (packet_nums));
+            float * lambda_vals = (float *) malloc(sizeof(float) * (packet_nums));
+            float * time_vals = (float *) malloc(sizeof(float) * (packet_nums));
             assert(lambda_vals != NULL);
+            assert(time_vals != NULL);
 
             for (int i = 0; i < packet_nums; i++) {
                 packets[i] = (char *) malloc(sizeof(char) * (block_size));
@@ -139,9 +141,10 @@ int main(int argc, char * argv[]) {
                 struct timeval time;
                 gettimeofday(&time, NULL);
                 float elapsed = 1.0 * ((time.tv_sec-start_time.tv_sec)*1000000 + (time.tv_usec-start_time.tv_usec)) / 1000;
-                lambda_vals[i] = elapsed; 
-                start_time.tv_sec = time.tv_sec;
-                start_time.tv_usec = time.tv_usec;
+                time_vals[i] = elapsed;
+                lambda_vals[i] = packetinterval;
+
+                
                 if (CONTROLLAW == 0) { // method d
                     lambda = lambda + epsilon * (q_star - bufferstate) + gamma * (ideal - lambda);
                 } else { // method c
@@ -172,6 +175,9 @@ int main(int argc, char * argv[]) {
             } else {
                 for (int i = 0; i < packet_nums; i++) {
                     fprintf(log_file, "%0.3f, ", lambda_vals[i]);
+                }
+                for (int i = 0; i < packet_nums; i++) {
+                    fprintf(log_file, "%0.3f, ", time_vals[i]);
                 }
             }
 
