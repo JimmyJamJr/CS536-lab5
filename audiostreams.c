@@ -17,7 +17,7 @@ int main(int argc, char * argv[]) {
     float gamma = atof(argv[3]);
     const int q_star = 10;
     //const int beta = 1;
-    float ideal = 1.0 / 313 * 1000;
+    float ideal = (1.0 / 313) * 1000;
 
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -45,7 +45,6 @@ int main(int argc, char * argv[]) {
 
         first_packet_t first_packet = {0};
 
-        
         recvfrom(sockfd, &first_packet, sizeof(first_packet_t), 0, (struct sockaddr *) &client_addr, &client_addr_len);
 
         if (first_packet.file_name[20] != ' ') {
@@ -127,7 +126,12 @@ int main(int argc, char * argv[]) {
                 // nano sleep at start for fun!
                 printf("lambda: %f\n", lambda);
                 struct timespec tim1, tim2;
-                tim1.tv_sec = 0;
+                while (packetinterval > 1000000000) {
+                    
+                    tim1.tv_sec++;
+                    packetinterval -= 1000000000;
+                }
+                //tim1.tv_sec = 0;
                 tim1.tv_nsec = packetinterval;
                 nanosleep(&tim1, &tim2);
                 sendto(child_socket, packets[i], block_size, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
@@ -146,14 +150,15 @@ int main(int argc, char * argv[]) {
 
                 
                 if (CONTROLLAW == 0) { // method d
-                    lambda = lambda + epsilon * (q_star - bufferstate) + gamma * (ideal - packetinterval / 1000000);
+                printf("ideal: %f, packetinterval: %ld\n", ideal, packetinterval / 1000000);
+                    lambda = lambda + epsilon * (q_star - bufferstate) + gamma * ((ideal - lambda));
                 } else { // method c
                     lambda = lambda + epsilon * (q_star - bufferstate);
                 }
 
                 // makes lambda at minimum (so that all packets don't get sent at once)
-                if (lambda < .55) {
-                    lambda = .55;
+                if (lambda < 0.6) {
+                    lambda = 0.6;
                 }
                 
 
@@ -179,10 +184,7 @@ int main(int argc, char * argv[]) {
                 fprintf(stdout, "Unable to open log file!\n");
             } else {
                 for (int i = 0; i < packet_nums; i++) {
-                    fprintf(log_file, "%0.3f, ", lambda_vals[i] / 1000000);
-                }
-                for (int i = 0; i < packet_nums; i++) {
-                    fprintf(log_file, "%0.3f, ", time_vals[i]);
+                    fprintf(log_file, "%0.3f,%0.3f\n", lambda_vals[i] / 1000000, time_vals[i]);
                 }
             }
 
