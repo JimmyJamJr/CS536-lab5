@@ -2,8 +2,11 @@
 
 // ./audiostreams 10 1 1 logfileS 128.10.112.142  26260
 // 1 .1 1
+// method c: 3 .01 1
+//       converge: 3 .0003 1
 
-#define CONTROLLAW 0
+
+#define CONTROLLAW 1
 
 
 int main(int argc, char * argv[]) {
@@ -126,6 +129,7 @@ int main(int argc, char * argv[]) {
                 // nano sleep at start for fun!
                 printf("lambda: %f\n", lambda);
                 struct timespec tim1, tim2;
+                long packetinterval_cpy = packetinterval;
                 while (packetinterval > 1000000000) {
                     
                     tim1.tv_sec++;
@@ -135,20 +139,25 @@ int main(int argc, char * argv[]) {
                 tim1.tv_nsec = packetinterval;
                 nanosleep(&tim1, &tim2);
                 sendto(child_socket, packets[i], block_size, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
+                
                 unsigned short bufferstate;
                 int recieved = recvfrom(child_socket, &bufferstate, 3, 0, (struct sockaddr*) &client_addr, &client_addr_len);
                 if (recieved != 2) {
                     fprintf(stdout, "Error: Bufferstate not correct size for client number: %d. Exiting...\n", client_num);
                 }
-
                 printf("client buffer has %d filled!\n", bufferstate);
+                       
+                if (bufferstate > 20) {
+                    bufferstate = 0;
+                }
+
                 struct timeval time;
                 gettimeofday(&time, NULL);
                 float elapsed = 1.0 * ((time.tv_sec-start_time.tv_sec)*1000000 + (time.tv_usec-start_time.tv_usec)) / 1000;
                 time_vals[i] = elapsed;
                 lambda_vals[i] = packetinterval;
 
-                
+                packetinterval = packetinterval_cpy;
                 if (CONTROLLAW == 0) { // method d
                 printf("ideal: %f, packetinterval: %ld\n", ideal, packetinterval / 1000000);
                     lambda = lambda + epsilon * (q_star - bufferstate) + gamma * ((ideal - lambda));
@@ -157,11 +166,10 @@ int main(int argc, char * argv[]) {
                 }
 
                 // makes lambda at minimum (so that all packets don't get sent at once)
-                if (lambda < 0.6) {
-                    lambda = 0.6;
+                if (lambda < 1.8) {
+                    lambda = 1.8;
                 }
                 
-
                 packetinterval = 1.0 / lambda * 1000000000; // Unit: nanoseconds
 
             }
