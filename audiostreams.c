@@ -3,7 +3,7 @@
 // ./audiostreams 10 1 1 logfileS 128.10.112.142  26260
 // 1 .1 1
 // method c: 3 .01 1
-//       converge: 3 .0003 1
+//       converge: 3.3 .0003 1
 
 
 #define CONTROLLAW 1
@@ -11,6 +11,19 @@
 float lambda;
 float epsilon;
 float gamma;
+
+/**
+ gnuplot -p
+
+ set terminal png
+ set output 'server.png'
+ set datafile separator ','
+ set xlabel 'time since start (ms)'
+ set ylabel 'time between packets (ms)'
+ set title 'lambda=3.3, epsilon=0.0003, gamma=1'
+ plot 'logfileS-0' using 1:2 with lines lc 'red' lw 1
+
+ **/
 
 void create_graph(char * input_file_path) {
     printf("Creating server graph\n");
@@ -181,8 +194,8 @@ int main(int argc, char * argv[]) {
                 }
 
                 // makes lambda at minimum (so that all packets don't get sent at once)
-                if (lambda < .6) {
-                    lambda = .6;
+                if (lambda < 1.8) {
+                    lambda = 1.8;
                 }
                 
                 packetinterval = 1.0 / lambda * 1000000000; // Unit: nanoseconds
@@ -209,7 +222,7 @@ int main(int argc, char * argv[]) {
                     fprintf(log_file, "%0.3f,%0.3f\n", time_vals[i], lambda_vals[i] / 1000000);
                 }
             }
-
+            fclose(log_file);
             create_graph(log_file_name);
 
             free(lambda_vals);

@@ -8,7 +8,7 @@
 
 // ./audiostreamc kj.au 4096 81920 40960 128.10.112.142 26260 logfileC
 
-// .audiostreamc pp.au 4096 61440 30720 128.10.112.153 26260 logfileC
+// ./audiostreamc pp.au 4096 61440 30720 128.10.112.153 26260 logfileC
 
 static snd_pcm_t *mulawdev;
 static snd_pcm_uframes_t mulawfrms;
@@ -170,7 +170,7 @@ void sig_handler(int signum) {
 	}
 	else {
 		printf("No response from the server after 2s, closing the client.\n");
-    	exit(-1);
+    	exit(1);
 	}
 }
 
