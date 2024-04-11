@@ -1,6 +1,6 @@
 #include "audiostream.h"
 
-// ./audiostreams 1 1 1 logfileS 128.10.112.142  26260
+// ./audiostreams 10 1 1 logfileS 128.10.112.142  26260
 
 
 #define CONTROLLAW 0
@@ -104,7 +104,7 @@ int main(int argc, char * argv[]) {
             char ** packets = (char **) malloc(sizeof(char *) * packet_nums);
             assert(packets != NULL);
 
-            float * lambda_vals = (int *) malloc(sizeof(int) * (packet_nums));
+            float * lambda_vals = (float *) malloc(sizeof(int) * (packet_nums));
             assert(lambda_vals != NULL);
 
             for (int i = 0; i < packet_nums; i++) {
@@ -114,7 +114,7 @@ int main(int argc, char * argv[]) {
             }
 
 
-            long packetinterval = 1.0 / lambda * 1000000;
+            long packetinterval = 1.0 / lambda * 1000000000; // Unit: nanoseconds
 
             struct timeval start_time;
             gettimeofday(&start_time, NULL);
@@ -122,11 +122,12 @@ int main(int argc, char * argv[]) {
 
             for (int i = 0; i < packet_nums; i++) {
                 // nano sleep at start for fun!
+                printf("lambda: %d\n", lambda);
                 struct timespec tim1, tim2;
                 tim1.tv_sec = 0;
                 tim1.tv_nsec = packetinterval;
                 nanosleep(&tim1, &tim2);
-                int sent = sendto(child_socket, packets[i], block_size, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
+                sendto(child_socket, packets[i], block_size, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
                 unsigned short bufferstate;
                 int recieved = recvfrom(child_socket, &bufferstate, 3, 0, (struct sockaddr*) &client_addr, &client_addr_len);
                 if (recieved != 2) {
@@ -146,13 +147,13 @@ int main(int argc, char * argv[]) {
                 }
                 
 
-                packetinterval = 1.0 / lambda * 1000000;
+                packetinterval = 1.0 / lambda * 1000000000; // Unit: nanoseconds
 
             }
 
             for (int i = 0; i < 5; i++) {
                 printf("Sending empty packet %d\n", i);
-                int sent = sendto(child_socket, NULL, 0, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
+                sendto(child_socket, NULL, 0, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
             }
 
             // Create file name here
