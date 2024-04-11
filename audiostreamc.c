@@ -131,6 +131,7 @@ void write_log_to_file() {
 		log_entry_t * curr = log_list;
 		while (curr) {
 			fprintf(log_file, "%d,%0.3f\n", curr->Q, curr->time);
+			curr = curr->next;
 		}
 	}
 	fclose(log_file);

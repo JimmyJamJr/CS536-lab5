@@ -1,7 +1,7 @@
 #include "audiostream.h"
 
 // ./audiostreams 10 1 1 logfileS 128.10.112.142  26260
-
+// 1 .1 1
 
 #define CONTROLLAW 0
 
@@ -176,7 +176,6 @@ int main(int argc, char * argv[]) {
                 for (int i = 0; i < packet_nums; i++) {
                     fprintf(log_file, "%0.3f, ", lambda_vals[i]);
                 }
-                fprintf(log_file, "\n\n");
                 for (int i = 0; i < packet_nums; i++) {
                     fprintf(log_file, "%0.3f, ", time_vals[i]);
                 }
