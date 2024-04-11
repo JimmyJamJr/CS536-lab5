@@ -122,6 +122,7 @@ void sig_handler(int signum) {
 		printf("Reading from buffer\n");
 		log_occupency(client_buffer.filled);
 		send_buffer_occupancy();
+		mulawwrite(&read_buf);
 		ualarm(313 * 1000, 0);
 	}
 	else {
@@ -136,6 +137,8 @@ int main(int argc, char * argv[]) {
         fprintf(stdout, "Please input 8 Command Line Arguments\n");
         // exit(1);
     }
+
+	mulawopen(&buffer_size);
 
 	gettimeofday(&start_time, NULL);
 
@@ -211,7 +214,7 @@ int main(int argc, char * argv[]) {
 		}
 		
 	}
-
+	mulawclose();
 	
 
 	return 0;
