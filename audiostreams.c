@@ -101,7 +101,7 @@ int main(int argc, char * argv[]) {
             char ** packets = (char **) malloc(sizeof(char *) * packet_nums);
             assert(packets != NULL);
 
-            int * lambda_vals = (int *) malloc(sizeof(int) * packet_nums);
+            float * lambda_vals = (int *) malloc(sizeof(int) * (packet_nums));
             assert(lambda_vals != NULL);
 
             for (int i = 0; i < packet_nums; i++) {
@@ -112,14 +112,14 @@ int main(int argc, char * argv[]) {
             }
 
 
-            int packetinterval = 1.0 / lambda;    
+            int packetinterval = 1.0 / lambda * 1000000;
 
             struct timeval start_time;
             gettimeofday(&start_time, NULL);
 
             for (int i = 0; i < packet_nums; i++) {
-
-
+                // nano sleep at start for fun!
+                
                 int sent = sendto(child_socket, packets[i], strlen(packets[i]), 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
                 unsigned short bufferstate;
                 int recieved = recvfrom(child_socket, &bufferstate, 3, 0, (struct sockaddr*) &client_addr, &client_addr_len);
@@ -130,17 +130,18 @@ int main(int argc, char * argv[]) {
                 printf("client buffer has %d filled!\n", bufferstate);
                 struct timeval time;
                 gettimeofday(&time, NULL);
+                float elapsed = 1.0 * ((time.tv_sec-start_time.tv_sec)*1000000 + (time.tv_usec-start_time.tv_usec)) / 1000;
+                lambda_vals[i] = elapsed; 
 
                 lambda = lambda + epsilon * (q_star - bufferstate) + beta * (gamma - lambda);
+                packetinterval = 1.0 / lambda * 1000000;
+
             }
 
             for (int i = 0; i < 5; i++) {
                 printf("Sending empty packet %d\n", i);
                 int sent = sendto(child_socket, NULL, 0, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
             }
-            
-
-
 
             // Create file name here
             char log_file[50] = "server_log_files/";
@@ -150,18 +151,21 @@ int main(int argc, char * argv[]) {
             strcat(log_file, "-");
             strcat(log_file, cnt);
 
+            FILE * log_file = fopen(log_file, "w");
+            if (log_file == NULL) {
+                fprintf(stdout, "Unable to open log file!\n");
+            } else {
+                for (int i = 0; i < packet_nums; i++) {
+                    fprintf(log_file, "%0.3f, ", lambda_vals[i]);
+                }
+            }
 
-            // print log files here
-
-
-
-
-            
             free(lambda_vals);
             for (int i = 0; i < packet_nums; i++) {
                 free(packets[i]);
             }
             free(packets);
+            fprintf(stdout, "Exiting child process at end of file transmission\n");
             exit(1);
         }
 
