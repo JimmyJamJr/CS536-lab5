@@ -117,14 +117,14 @@ void send_buffer_occupancy() {
 
 void write_log_to_file() {
 	// Create file name here
-	char log_file_name[50] = "client_log_files/";
+	char log_file_path[50] = "client_log_files/";
 	char pid[10];
 	sprintf(pid, "%d", getpid());
-	strcat(log_file_name, log_file_name);
-	strcat(log_file_name, "-");
-	strcat(log_file_name, pid);
+	strcat(log_file_path, log_file_name);
+	strcat(log_file_path, "-");
+	strcat(log_file_path, pid);
 
-	FILE * log_file = fopen(log_file_name, "w");
+	FILE * log_file = fopen(log_file_path, "w");
 	if (log_file == NULL) {
 		fprintf(stdout, "Unable to open log file!\n");
 	} else {
