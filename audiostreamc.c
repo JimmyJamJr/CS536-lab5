@@ -3,6 +3,7 @@
 
 #include <signal.h>
 #include <sys/time.h>
+#include <math.h>
 
 // ./audiostreamc kj.au 4096 81920 81920 128.10.112.142 26260 logfileC
 
@@ -37,16 +38,73 @@ void mulawclose(void) {
 
 typedef struct log_entry {
 	int Q;
-	int time;
+	float time;
 	struct log_entry * next;
 } log_entry_t;
 
+unsigned short block_size;
+unsigned short buffer_size;
+unsigned short target_buf;
+
+struct sockaddr_in server_address;
+int udp_sock;
+
+struct timeval start_time = {0};
 int transmission_started = 0;
 fifo_t client_buffer = {0};
 log_entry_t * log_list = NULL;
 
 void log_occupency(int Q) {
-	
+	log_entry_t * new_log = malloc(sizeof(log_entry_t));
+	new_log->Q = client_buffer.filled;
+	struct timeval curr_time = {0};
+	gettimeofday(&curr_time, NULL);
+	float elpased = (curr_time.tv_sec - start_time.tv_sec) * 1000 + (curr_time.tv_usec - start_time.tv_usec) / 1000.0;
+	new_log->time = elpased;
+	new_log->next = NULL;
+
+	log_entry_t * prev = NULL;
+	log_entry_t * curr = log_list;
+	while (curr) {
+		prev = curr;
+		curr = curr->next;
+	}
+
+	if (prev) {
+		new_log->next = curr;
+		prev->next = new_log;
+	}
+	else {
+		log_list = new_log;
+	}
+}
+
+int get_latest_Q() {
+	log_entry_t * curr = log_list;
+	while (curr) {
+		if (curr->next == NULL) {
+			return curr->Q;
+		}
+	}
+	return -1;
+}
+
+void send_buffer_occupancy() {
+	int current_Q = get_latest_Q();
+	unsigned short num_to_send = 0;
+	if (current_Q > target_buf) {
+		float q = (current_Q - target_buf) * 1.0 / (buffer_size - target_buf);
+		num_to_send = round(q * 10 + 10);
+	}
+	else if (current_Q < target_buf) {
+		float q = (target_buf - current_Q) / target_buf;
+		num_to_send = round(10 - (q * 10));
+	}
+	else {
+		num_to_send = 10;
+	}
+
+	int sent = sendto(udp_sock, &num_to_send, sizeof(num_to_send), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
 }
 
 
@@ -56,9 +114,7 @@ void sig_handler(int signum) {
 	if (transmission_started) {
 		char read_buf[4096];
 		fifo_read(&client_buffer, read_buf, 4096);
-
-		
-
+		send_buffer_occupancy();
 		ualarm(313 * 1000, 0);
 	}
 	else {
@@ -74,18 +130,20 @@ int main(int argc, char * argv[]) {
         // exit(1);
     }
 
+	gettimeofday(&start_time, NULL);
+
 	char * aud_file_name = argv[1];
-	unsigned short block_size = atoi(argv[2]);
-	unsigned short buffer_size = atoi(argv[3]);
-	char * target_buf = argv[4];
+	block_size = atoi(argv[2]);
+	buffer_size = atoi(argv[3]);
+	target_buf = atoi(argv[4]);
 	char * server_ip = argv[5];
 	char * server_port = argv[6];
 	char * log_file_name = argv[7];
 
-    int udp_sock = socket(AF_INET, SOCK_DGRAM, 0);
+    udp_sock = socket(AF_INET, SOCK_DGRAM, 0);
 
     // Create struct for the server address
-    struct sockaddr_in server_address = {.sin_family = AF_INET, .sin_port = atoi(server_port)};
+    server_address = {.sin_family = AF_INET, .sin_port = atoi(server_port)};
     inet_pton(AF_INET, server_ip, &(server_address.sin_addr));
 
 	// Create and send iniital packet to the server
@@ -131,8 +189,7 @@ int main(int argc, char * argv[]) {
 		if (received_size > 0) {
 			fifo_write(&client_buffer, new_packet, received_size - 1); // don't write the null character at the end
 			// write back how full the client_buffer is
-			unsigned short buffer_state = client_buffer.filled;
-			sendto(udp_sock, &buffer_state, 2, 0, (struct sockaddr*) &server_address, sizeof(server_address));
+			send_buffer_occupancy();
 
 		}
 		else {
