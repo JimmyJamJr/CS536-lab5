@@ -85,6 +85,7 @@ int get_latest_Q() {
 		if (curr->next == NULL) {
 			return curr->Q;
 		}
+		curr = curr->next;
 	}
 	return -1;
 }
@@ -143,7 +144,8 @@ int main(int argc, char * argv[]) {
     udp_sock = socket(AF_INET, SOCK_DGRAM, 0);
 
     // Create struct for the server address
-    server_address = {.sin_family = AF_INET, .sin_port = atoi(server_port)};
+    server_address.sin_family = AF_INET;
+	server_address.sin_port = atoi(server_port);
     inet_pton(AF_INET, server_ip, &(server_address.sin_addr));
 
 	// Create and send iniital packet to the server
