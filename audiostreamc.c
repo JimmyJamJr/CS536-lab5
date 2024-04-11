@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <math.h>
+#include <unistd.h>
 
 // ./audiostreamc kj.au 4096 81920 40960 128.10.112.142 26260 logfileC
 
@@ -47,6 +48,7 @@ typedef struct log_entry {
 unsigned short block_size;
 unsigned short buffer_size;
 unsigned short target_buf;
+char * log_file_name;
 
 struct sockaddr_in server_address;
 int udp_sock;
@@ -113,6 +115,27 @@ void send_buffer_occupancy() {
 	int sent = sendto(udp_sock, &num_to_send, sizeof(num_to_send), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
 }
 
+void write_log_to_file() {
+	// Create file name here
+	char log_file_name[50] = "client_log_files/";
+	char pid[10];
+	sprintf(pid, "%d", getpid());
+	strcat(log_file_name, log_file_name);
+	strcat(log_file_name, "-");
+	strcat(log_file_name, pid);
+
+	FILE * log_file = fopen(log_file_name, "w");
+	if (log_file == NULL) {
+		fprintf(stdout, "Unable to open log file!\n");
+	} else {
+		log_entry_t * curr = log_list;
+		while (curr) {
+			fprintf(log_file, "%d,%0.3f\n", curr->Q, curr->time);
+		}
+	}
+	fclose(log_file);
+}
+
 
 // Handler which will print an error message and quit if server doesn't respond after 2
 // Or if the transmission has started, read from buffer when the alarm goes off
@@ -150,7 +173,7 @@ int main(int argc, char * argv[]) {
 	target_buf = atoi(argv[4]);
 	char * server_ip = argv[5];
 	char * server_port = argv[6];
-	char * log_file_name = argv[7];
+	log_file_name = argv[7];
 
     udp_sock = socket(AF_INET, SOCK_DGRAM, 0);
 
