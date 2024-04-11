@@ -3,6 +3,9 @@
 // ./audiostreams 1 1 1 logfileS 128.10.112.142  26260
 
 
+#define CONTROLLAW 0
+
+
 int main(int argc, char * argv[]) {
     if (argc != 7) {
         fprintf(stdout, "Please input 7 Command Line Arguments\n");
@@ -119,7 +122,8 @@ int main(int argc, char * argv[]) {
 
             for (int i = 0; i < packet_nums; i++) {
                 // nano sleep at start for fun!
-                
+                //
+
                 int sent = sendto(child_socket, packets[i], strlen(packets[i]), 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
                 unsigned short bufferstate;
                 int recieved = recvfrom(child_socket, &bufferstate, 3, 0, (struct sockaddr*) &client_addr, &client_addr_len);
@@ -133,7 +137,13 @@ int main(int argc, char * argv[]) {
                 float elapsed = 1.0 * ((time.tv_sec-start_time.tv_sec)*1000000 + (time.tv_usec-start_time.tv_usec)) / 1000;
                 lambda_vals[i] = elapsed; 
 
-                lambda = lambda + epsilon * (q_star - bufferstate) + beta * (gamma - lambda);
+                if (CONTROLLAW == 0) { // method d
+                    lambda = lambda + epsilon * (q_star - bufferstate) + beta * (gamma - lambda);
+                } else { // method c
+                    lambda = lambda + epsilon * (q_star - bufferstate);
+                }
+                
+
                 packetinterval = 1.0 / lambda * 1000000;
 
             }
@@ -144,14 +154,14 @@ int main(int argc, char * argv[]) {
             }
 
             // Create file name here
-            char log_file[50] = "server_log_files/";
+            char log_file_name[50] = "server_log_files/";
             char cnt[10];
             sprintf(cnt, "%d", client_num);
-            strcat(log_file, argv[4]);
-            strcat(log_file, "-");
-            strcat(log_file, cnt);
+            strcat(log_file_name, argv[4]);
+            strcat(log_file_name, "-");
+            strcat(log_file_name, cnt);
 
-            FILE * log_file = fopen(log_file, "w");
+            FILE * log_file = fopen(log_file_name, "w");
             if (log_file == NULL) {
                 fprintf(stdout, "Unable to open log file!\n");
             } else {
