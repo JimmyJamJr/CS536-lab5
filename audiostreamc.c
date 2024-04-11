@@ -115,6 +115,7 @@ void send_buffer_occupancy() {
 // Handler which will print an error message and quit if server doesn't respond after 2
 // Or if the transmission has started, read from buffer when the alarm goes off
 void sig_handler(int signum) {
+	printf("test\n");
 	if (transmission_started == 1) {
 		char read_buf[4096];
 		fifo_read(&client_buffer, read_buf, 4096);
@@ -190,6 +191,7 @@ int main(int argc, char * argv[]) {
 
 		if (empty_packets == 4) {
 			// Server is done
+			alarm(0);
 			break;
 		}
 		
