@@ -150,6 +150,11 @@ int main(int argc, char * argv[]) {
                 } else { // method c
                     lambda = lambda + epsilon * (q_star - bufferstate);
                 }
+
+                // makes lambda at minimum (so that all packets don't get sent at once)
+                if (lambda < .55) {
+                    lambda = .55;
+                }
                 
 
                 packetinterval = 1.0 / lambda * 1000000000; // Unit: nanoseconds

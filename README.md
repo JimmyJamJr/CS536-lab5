@@ -1,1 +1,12 @@
 # CS536-lab5
+
+### audiostreamc.c
+This file will connect to a server, and recieve audio packets from it. It will first create a socket and bind to the server's ip addr and port number. Then it will initialize the packet arrays and FIFO queue. Then, it will begin recieving packets and storing them in the FIFO queue. Every 313 ms an alarm handler will be invoked to read in 4096 bytes from the FIFO queue and pass it into the functions copied over from testaudio.c to play. After recieving a packet, the client will create the bufferstate variable to send to the server as specified in the lab handout. If 5 straight empty packets are recieved from the server, the client will know that all packet transmission is finished and will log the necessary data. Also, if a packet is not recieved for a 2 second period, the client will assume that the server will no longer send packets to the client and terminate.
+
+
+### audiostreams.c
+The main function in this file is in charge handling audio requests from clients. At startup, the client will create a socket and bind with the given command line arguments. Then, it will enter into a loop waiting for client requests. When a client packet is recieved, the server will ensure that the packet is in the correct format. If it is not, the server will ignore the request. The server will fork into a child process that will handle all communication with that specific client and create a new child socket and bind to the client. Then, it will read in the contents of the audio (.au) file into a buffer, and initialize the packet interval and any other variables. Then, it will begin sending audio data to the client, waiting for a response that contains the bufferstate before calculating the elapse time, the packet interval and the new lambda value. Then it will begin the loop again. Prior to any send, the server will sleep in accordance to packetinterval. Once all contents of the file have been sent, the server will send 5 empty packets to the client, signifying that transmission has ended. Prior to the child process exiting, it will print out to a file all of the log data it has recieved.
+
+
+### fifo.h
+This file was taken from the internet to implement a FIFO queue (link: https://blog.stratifylabs.dev/device/2013-10-02-A-FIFO-Buffer-Implementation/). We did not implement our own queue but did slightly modify the one from the link above to fit the needs of this assignment.
