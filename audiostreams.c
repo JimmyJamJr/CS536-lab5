@@ -108,23 +108,25 @@ int main(int argc, char * argv[]) {
             assert(lambda_vals != NULL);
 
             for (int i = 0; i < packet_nums; i++) {
-                packets[i] = (char *) malloc(sizeof(char) * (block_size + 1));
+                packets[i] = (char *) malloc(sizeof(char) * (block_size));
                 assert(packets[i] != NULL);
-                int items_read = fread(packets[i], sizeof(char), block_size, audio_file);
-                packets[i][items_read] = '\0';
+                fread(packets[i], sizeof(char), block_size, audio_file);
             }
 
 
-            int packetinterval = 1.0 / lambda * 1000000;
+            long packetinterval = 1.0 / lambda * 1000000;
 
             struct timeval start_time;
             gettimeofday(&start_time, NULL);
+            
 
             for (int i = 0; i < packet_nums; i++) {
                 // nano sleep at start for fun!
-                //
-
-                int sent = sendto(child_socket, packets[i], strlen(packets[i]), 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
+                struct timespec tim1, tim2;
+                tim1.tv_sec = 0;
+                tim1.tv_nsec = packetinterval;
+                nanosleep(&tim1, &tim2);
+                int sent = sendto(child_socket, packets[i], block_size, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
                 unsigned short bufferstate;
                 int recieved = recvfrom(child_socket, &bufferstate, 3, 0, (struct sockaddr*) &client_addr, &client_addr_len);
                 if (recieved != 2) {
