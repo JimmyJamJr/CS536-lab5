@@ -6,7 +6,7 @@
 //       converge: 3.3 .0003 1
 
 
-#define CONTROLLAW 1
+#define CONTROLLAW 0
 
 float lambda;
 float epsilon;
@@ -20,13 +20,12 @@ float gamma;
  set datafile separator ','
  set xlabel 'time since start (ms)'
  set ylabel 'time between packets (ms)'
- set title 'lambda=3.3, epsilon=0.0003, gamma=1'
+ set title 'lambda=20, epsilon=1, gamma=1'
  plot 'logfileS-0' using 1:2 with lines lc 'red' lw 1
 
  **/
 
 void create_graph(char * input_file_path) {
-    printf("Creating server graph\n");
 	FILE * pipe_gp = popen("gnuplot -p", "w");
 	fputs("set terminal png \n",pipe_gp);
 	fputs("set output 'server.png' \n",pipe_gp);
@@ -92,15 +91,12 @@ int main(int argc, char * argv[]) {
         }
 
         unsigned short block_size = first_packet.block_size; 
-        char * ip_addr = inet_ntoa(client_addr.sin_addr);
         int client_num = client_count++;
 
         int k = fork();
         if (k == 0) { // child process
 
             int child_socket = socket(AF_INET, SOCK_DGRAM, 0);
-
-            printf("client ip addr: %s\n", ip_addr);
 
             struct sockaddr_in child_addr;
             memset(&child_addr, 0, sizeof(child_addr));
@@ -131,7 +127,6 @@ int main(int argc, char * argv[]) {
             if (file_size % block_size != 0) {
                 packet_nums++;
             }
-            printf("packet_nums: %d\n", packet_nums);
 
             char ** packets = (char **) malloc(sizeof(char *) * packet_nums);
             assert(packets != NULL);
@@ -156,7 +151,6 @@ int main(int argc, char * argv[]) {
 
             for (int i = 0; i < packet_nums; i++) {
                 // nano sleep at start for fun!
-                printf("lambda: %f\n", lambda);
                 struct timespec tim1, tim2;
                 long packetinterval_cpy = packetinterval;
                 while (packetinterval > 1000000000) {
@@ -174,7 +168,6 @@ int main(int argc, char * argv[]) {
                 if (recieved != 2) {
                     fprintf(stdout, "Error: Bufferstate not correct size for client number: %d. Exiting...\n", client_num);
                 }
-                printf("client buffer has %d filled!\n", bufferstate);
                        
                 if (bufferstate > 20) {
                     bufferstate = 0;
@@ -194,15 +187,14 @@ int main(int argc, char * argv[]) {
                 }
 
                 // makes lambda at minimum (so that all packets don't get sent at once)
-                if (lambda < 1.8) {
-                    lambda = 1.8;
+                if (lambda < 6) {
+                    lambda = 6;
                 }
                 
                 packetinterval = 1.0 / lambda * 1000000000; // Unit: nanoseconds
             }
 
             for (int i = 0; i < 5; i++) {
-                printf("Sending empty packet %d\n", i);
                 sendto(child_socket, NULL, 0, 0, (struct sockaddr*) &client_addr, sizeof(client_addr));
             }
 
@@ -230,7 +222,6 @@ int main(int argc, char * argv[]) {
                 free(packets[i]);
             }
             free(packets);
-            fprintf(stdout, "Exiting child process at end of file transmission\n");
             // exit(1);
         }
 

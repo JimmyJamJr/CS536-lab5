@@ -61,7 +61,6 @@ log_entry_t * log_list = NULL;
 void log_occupency(int Q) {
 	log_entry_t * new_log = malloc(sizeof(log_entry_t));
 	new_log->Q = client_buffer.filled;
-	printf("%d\n", new_log->Q);
 	struct timeval curr_time = {0};
 	gettimeofday(&curr_time, NULL);
 	float elpased = (curr_time.tv_sec - start_time.tv_sec) * 1000 + (curr_time.tv_usec - start_time.tv_usec) / 1000.0;
@@ -97,7 +96,7 @@ int get_latest_Q() {
 
 void send_buffer_occupancy() {
 	int current_Q = get_latest_Q();
-	printf("current Q: %d\n", current_Q);
+
 	unsigned short num_to_send = 0;
 	if (current_Q > target_buf) {
 		float q = (current_Q - target_buf) * 1.0 / (buffer_size - target_buf);
@@ -115,12 +114,11 @@ void send_buffer_occupancy() {
 		num_to_send = 21;
 	}
 
-	printf("sending q to server: %d\n", num_to_send);
-	int sent = sendto(udp_sock, &num_to_send, sizeof(num_to_send), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
+	sendto(udp_sock, &num_to_send, sizeof(num_to_send), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
 }
 
 void create_graph(char * input_file_path) {
-	printf("Creating client graph\n");
+
 	FILE * pipe_gp = popen("gnuplot -p", "w");
 	fputs("set terminal png \n",pipe_gp);
 	fputs("set output 'client.png' \n",pipe_gp);
@@ -158,13 +156,10 @@ void write_log_to_file() {
 // Handler which will print an error message and quit if server doesn't respond after 2
 // Or if the transmission has started, read from buffer when the alarm goes off
 void sig_handler(int signum) {
-	printf("test\n");
 	if (transmission_started == 1) {
 		char read_buf[4096];
 		fifo_read(&client_buffer, read_buf, 4096);
-		printf("Reading from buffer\n");
 		log_occupency(client_buffer.filled);
-		send_buffer_occupancy();
 		mulawwrite(&read_buf);
 		ualarm(313 * 1000, 0);
 	}
@@ -208,9 +203,7 @@ int main(int argc, char * argv[]) {
         first_packet.file_name[i] = ' ';
     }
     
-	int sent = sendto(udp_sock, &first_packet, sizeof(first_packet_t), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
-
-	printf("Sent inital packet to server %d\n", sent);
+	sendto(udp_sock, &first_packet, sizeof(first_packet_t), 0, (struct sockaddr*) &server_address, sizeof(server_address)); 
 
 	// Create buffer to store audio data received
 	char buf[buffer_size];
@@ -219,7 +212,8 @@ int main(int argc, char * argv[]) {
 
 	// Start an alarm to quit if no response from server for 2s
     signal(SIGALRM, sig_handler);
-    ualarm(2000 * 1000, 0);
+	alarm(2);
+    //ualarm(2000 * 1000, 0);
 
 	// Receive audio data from the server and push it into the buffer
 	uint32_t server_address_len = sizeof(server_address);
@@ -228,7 +222,6 @@ int main(int argc, char * argv[]) {
 	while (1) {
 		// block size + 1 to include null terminal
 		size_t received_size = recvfrom(udp_sock, &new_packet, block_size, 0, (struct sockaddr*) &server_address, &server_address_len);
-		printf("Received %ld bytes from the server\n", received_size);
 		if (received_size == 0) {
 			empty_packets++;
 		} else {
